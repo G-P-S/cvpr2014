@@ -25,12 +25,16 @@ extern "C"{
 #include <libavutil/motion_vector.h>
 #include <libavformat/avformat.h>
 }
+#include <algorithm>
+#include "util.h"
+#include <fstream>
+#include <cstdio>
 #include <string>
 #include "common.h"
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 using namespace cv;
-
+using namespace std;
 struct MotionVector
 {
 	int X,Y;
@@ -91,23 +95,19 @@ struct FrameReader
 	
 	av_register_all();
 	if (avformat_open_input(&fmt_ctx, src_filename, NULL, NULL) < 0) {
-		fprintf(stderr, "Could not open source file %s\n", src_filename);
-		exit(1);
+		throw runtime_error("Could not open source file "+std::string(src_filename)+"\n");
 	}
 
         if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
-		fprintf(stderr, "Could not find stream information\n");
-		exit(1);
+		throw runtime_error("Could not find stream information\n");
 	}
 
 	open_codec_context(fmt_ctx, AVMEDIA_TYPE_VIDEO);
 	av_dump_format(fmt_ctx, 0, src_filename, 0);
 
 	if (!video_stream) {
-	fprintf(stderr, "Could not find video stream in the input, aborting\n");
-	ret = 1;
-	release();
-	exit(1);
+		release();
+		throw runtime_error( "Could not find video stream in the input, aborting\n");
 	}
 
 	frame = av_frame_alloc();
